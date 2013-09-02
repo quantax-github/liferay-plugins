@@ -177,7 +177,12 @@ public class GadgetLocalServiceImpl extends GadgetLocalServiceBaseImpl {
 
 	public Gadget getGadget(String uuid, long companyId)
 		throws PortalException, SystemException {
-
+		
+		int i = uuid.indexOf("_INSTANCE_");
+		if(i != -1) {
+			uuid = uuid.substring(0, i);
+		}
+		
 		List<Gadget> gadgets = gadgetPersistence.findByUuid_C(uuid, companyId);
 
 		if (gadgets.isEmpty()) {
