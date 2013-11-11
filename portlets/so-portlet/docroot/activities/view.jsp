@@ -39,7 +39,7 @@ portletURL.setParameter("tabs1", tabs1);
 
 <div class="loading-bar"></div>
 
-<aui:script use="aui-base,aui-io-request,aui-parse-content,liferay-so-scroll">
+<aui:script use="aui-base,aui-io-request-deprecated,aui-parse-content,liferay-so-scroll">
 	var activities = A.one('#p_p_id<portlet:namespace />');
 	var body = A.getBody();
 
@@ -68,13 +68,21 @@ portletURL.setParameter("tabs1", tabs1);
 		setTimeout(
 			function() {
 				<portlet:renderURL var="viewActivitySetsURL" windowState="<%= LiferayWindowState.EXCLUSIVE.toString() %>">
-					<portlet:param name="mvcPath" value="/activities/view_activity_sets.jsp" />
+					<c:choose>
+						<c:when test="<%= GetterUtil.getBoolean(PropsUtil.get(PropsKeys.SOCIAL_ACTIVITY_SETS_ENABLED)) %>">
+							<portlet:param name="mvcPath" value="/activities/view_activity_sets.jsp" />
+						</c:when>
+						<c:otherwise>
+							<portlet:param name="mvcPath" value="/activities/view_activities.jsp" />
+						</c:otherwise>
+					</c:choose>
+
 					<portlet:param name="tabs1" value="<%= tabs1 %>" />
 				</portlet:renderURL>
 
 				var uri = '<%= viewActivitySetsURL %>';
 
-				uri = Liferay.Util.addParams('start=' + start, uri) || uri;
+				uri = Liferay.Util.addParams('<portlet:namespace />start=' + start, uri) || uri;
 
 				A.io.request(
 					uri,
@@ -120,7 +128,7 @@ portletURL.setParameter("tabs1", tabs1);
 		}
 	);
 
-	activities.delegate(
+	socialActivities.delegate(
 		'click',
 		function(event) {
 			var currentTarget = event.currentTarget;
@@ -139,7 +147,7 @@ portletURL.setParameter("tabs1", tabs1);
 			else {
 				var uri = '<liferay-portlet:resourceURL id="getComments"></liferay-portlet:resourceURL>';
 
-				uri = Liferay.Util.addParams('activitySetId=' + currentTarget.getAttribute('data-activitySetId'), uri) || uri;
+				uri = Liferay.Util.addParams('<portlet:namespace />activitySetId=' + currentTarget.getAttribute('data-activitySetId'), uri) || uri;
 
 				A.io.request(
 					uri,
@@ -158,7 +166,7 @@ portletURL.setParameter("tabs1", tabs1);
 								}
 							}
 						},
-						dataType: 'json',
+						dataType: 'json'
 					}
 				);
 			}
@@ -166,7 +174,7 @@ portletURL.setParameter("tabs1", tabs1);
 		'.view-comments a'
 	);
 
-	activities.delegate(
+	socialActivities.delegate(
 		'click',
 		function(event) {
 			if (confirm('<%= UnicodeLanguageUtil.get(pageContext,"are-you-sure-you-want-to-delete-the-selected-entry") %>')) {
@@ -232,14 +240,16 @@ portletURL.setParameter("tabs1", tabs1);
 		'.comment-entry .delete-comment a'
 	);
 
-	activities.delegate(
+	socialActivities.delegate(
 		'click',
 		function(event) {
 			var currentTarget = event.currentTarget;
 
 			var mbMessageIdOrMicroblogsEntryId = currentTarget.getAttribute('data-mbMessageIdOrMicroblogsEntryId');
 
-			var editForm = A.one('#<portlet:namespace />fm1' + mbMessageIdOrMicroblogsEntryId);
+			var commentsContainer = currentTarget.ancestor('.comments-container');
+
+			var editForm = commentsContainer.one('#<portlet:namespace />fm1' + mbMessageIdOrMicroblogsEntryId);
 
 			var commentEntry = currentTarget.ancestor('.comment-entry');
 
@@ -251,8 +261,6 @@ portletURL.setParameter("tabs1", tabs1);
 				editForm.toggle();
 			}
 			else {
-				var commentsContainer = currentTarget.ancestor('.comments-container');
-
 				editForm = commentsContainer.one('form').cloneNode(true);
 
 				editForm.show();
@@ -263,6 +271,12 @@ portletURL.setParameter("tabs1", tabs1);
 						name: '<portlet:namespace />fm1' + mbMessageIdOrMicroblogsEntryId
 					}
 				);
+
+				var userPortrait = editForm.one('.user-portrait');
+
+				if (userPortrait) {
+					userPortrait.remove();
+				}
 
 				var cmdInput = editForm.one('#<portlet:namespace /><%= Constants.CMD %>');
 
@@ -319,14 +333,14 @@ portletURL.setParameter("tabs1", tabs1);
 		'.comment-entry .edit-comment a'
 	);
 
-	activities.delegate(
+	socialActivities.delegate(
 		'click',
 		function(event) {
 			var currentTarget = event.currentTarget;
 
 			var uri = '<portlet:renderURL windowState="<%= LiferayWindowState.POP_UP.toString() %>"><portlet:param name="mvcPath" value="/activities/repost_microblogs_entry.jsp" /><portlet:param name="mvcPath" value="/activities/repost_microblogs_entry.jsp" /><portlet:param name="redirect" value="<%= currentURL %>" /></portlet:renderURL>';
 
-			uri = Liferay.Util.addParams('microblogsEntryId=' + currentTarget.getAttribute('data-microblogsEntryId'), uri) || uri;
+			uri = Liferay.Util.addParams('<portlet:namespace />microblogsEntryId=' + currentTarget.getAttribute('data-microblogsEntryId'), uri) || uri;
 
 			Liferay.Util.openWindow(
 				{
@@ -345,11 +359,22 @@ portletURL.setParameter("tabs1", tabs1);
 		'.repost a'
 	);
 
-	activities.delegate(
+	socialActivities.delegate(
 		'click',
 		function(event) {
 			Liferay.SO.Activities.toggleEntry(event, '<portlet:namespace />');
 		},
 		'.toggle-entry'
+	);
+
+	Liferay.on(
+		'sessionExpired',
+		function(event) {
+			var reload = function() {
+				window.location.reload();
+			};
+
+			loadNewContent = reload;
+		}
 	);
 </aui:script>

@@ -46,6 +46,7 @@ import com.liferay.calendar.util.CalendarDataHandlerFactory;
 import com.liferay.calendar.util.CalendarResourceUtil;
 import com.liferay.calendar.util.CalendarUtil;
 import com.liferay.calendar.util.JCalendarUtil;
+import com.liferay.calendar.util.PortletKeys;
 import com.liferay.calendar.util.RSSUtil;
 import com.liferay.calendar.util.WebKeys;
 import com.liferay.calendar.util.comparator.CalendarResourceNameComparator;
@@ -65,6 +66,7 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -186,7 +188,9 @@ public class CalendarPortlet extends MVCPortlet {
 			getCalendarResource(renderRequest);
 		}
 		catch (Exception e) {
-			if (e instanceof NoSuchResourceException) {
+			if (e instanceof NoSuchResourceException ||
+				e instanceof PrincipalException) {
+
 				SessionErrors.add(renderRequest, e.getClass());
 			}
 			else {
@@ -255,20 +259,32 @@ public class CalendarPortlet extends MVCPortlet {
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			Calendar.class.getName(), actionRequest);
 
+		Calendar calendar = null;
+
 		if (calendarId <= 0) {
 			CalendarResource calendarResource =
 				CalendarResourceServiceUtil.getCalendarResource(
 					calendarResourceId);
 
-			CalendarServiceUtil.addCalendar(
+			calendar = CalendarServiceUtil.addCalendar(
 				calendarResource.getGroupId(), calendarResourceId, nameMap,
 				descriptionMap, color, defaultCalendar, enableComments,
 				enableRatings, serviceContext);
 		}
 		else {
-			CalendarServiceUtil.updateCalendar(
+			calendar = CalendarServiceUtil.updateCalendar(
 				calendarId, nameMap, descriptionMap, color, defaultCalendar,
 				enableComments, enableRatings, serviceContext);
+		}
+
+		boolean saveAndContinue = ParamUtil.getBoolean(
+			actionRequest, "saveAndContinue");
+
+		if (saveAndContinue) {
+			String redirect = getEditCalendarURL(
+				actionRequest, actionResponse, calendar);
+
+			actionRequest.setAttribute(WebKeys.REDIRECT, redirect);
 		}
 	}
 
@@ -291,7 +307,6 @@ public class CalendarPortlet extends MVCPortlet {
 			actionRequest, "startTime");
 		java.util.Calendar endTimeJCalendar = getJCalendar(
 			actionRequest, "endTime");
-		long oldStartTime = ParamUtil.getLong(actionRequest, "oldStartTime");
 		boolean allDay = ParamUtil.getBoolean(actionRequest, "allDay");
 		String recurrence = getRecurrence(actionRequest);
 		long[] reminders = getReminders(actionRequest);
@@ -338,15 +353,17 @@ public class CalendarPortlet extends MVCPortlet {
 					(endTimeJCalendar.getTimeInMillis() -
 						startTimeJCalendar.getTimeInMillis());
 				long offset =
-					(startTimeJCalendar.getTimeInMillis() - oldStartTime);
+					(startTimeJCalendar.getTimeInMillis() -
+						calendarBooking.getStartTime());
 
-				CalendarBookingServiceUtil.updateCalendarBooking(
-					calendarBookingId, calendarId, childCalendarIds, titleMap,
-					descriptionMap, location,
-					(calendarBooking.getStartTime() + offset),
-					(calendarBooking.getStartTime() + offset + duration),
-					allDay, recurrence, reminders[0], remindersType[0],
-					reminders[1], remindersType[1], status, serviceContext);
+				calendarBooking =
+					CalendarBookingServiceUtil.updateCalendarBooking(
+						calendarBookingId, calendarId, childCalendarIds,
+						titleMap, descriptionMap, location,
+						(calendarBooking.getStartTime() + offset),
+						(calendarBooking.getStartTime() + offset + duration),
+						allDay, recurrence, reminders[0], remindersType[0],
+						reminders[1], remindersType[1], status, serviceContext);
 			}
 		}
 
@@ -505,6 +522,23 @@ public class CalendarPortlet extends MVCPortlet {
 			permissionOwnerId, messageId);
 	}
 
+	@Override
+	protected void doDispatch(
+			RenderRequest renderRequest, RenderResponse renderResponse)
+		throws IOException, PortletException {
+
+		if (SessionErrors.contains(
+				renderRequest, NoSuchResourceException.class.getName()) ||
+			SessionErrors.contains(
+				renderRequest, PrincipalException.class.getName())) {
+
+			include("/error.jsp", renderRequest, renderResponse);
+		}
+		else {
+			super.doDispatch(renderRequest, renderResponse);
+		}
+	}
+
 	protected void getCalendar(PortletRequest portletRequest) throws Exception {
 		long calendarId = ParamUtil.getLong(portletRequest, "calendarId");
 
@@ -559,6 +593,33 @@ public class CalendarPortlet extends MVCPortlet {
 
 		portletRequest.setAttribute(
 			WebKeys.CALENDAR_RESOURCE, calendarResource);
+	}
+
+	protected String getEditCalendarURL(
+			ActionRequest actionRequest, ActionResponse actionResponse,
+			Calendar calendar)
+		throws Exception {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		String editCalendarURL = PortalUtil.getLayoutFullURL(themeDisplay);
+
+		String namespace = actionResponse.getNamespace();
+
+		editCalendarURL = HttpUtil.setParameter(
+			editCalendarURL, "p_p_id", PortletKeys.CALENDAR);
+		editCalendarURL = HttpUtil.setParameter(
+			editCalendarURL, namespace + "mvcPath",
+			templatePath + "edit_calendar.jsp");
+		editCalendarURL = HttpUtil.setParameter(
+			editCalendarURL, namespace + "redirect",
+			getRedirect(actionRequest, actionResponse));
+		editCalendarURL = HttpUtil.setParameter(
+			editCalendarURL, namespace + "calendarId",
+			calendar.getCalendarId());
+
+		return editCalendarURL;
 	}
 
 	protected java.util.Calendar getJCalendar(
@@ -948,15 +1009,28 @@ public class CalendarPortlet extends MVCPortlet {
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
 		if (Validator.isNotNull(data)) {
-			CalendarDataHandler calendarDataHandler =
-				CalendarDataHandlerFactory.getCalendarDataHandler(
-					CalendarDataFormat.ICAL);
+			try {
+				CalendarDataHandler calendarDataHandler =
+					CalendarDataHandlerFactory.getCalendarDataHandler(
+						CalendarDataFormat.ICAL);
 
-			calendarDataHandler.importCalendar(calendarId, data);
+				calendarDataHandler.importCalendar(calendarId, data);
+
+				jsonObject.put("success", true);
+			}
+			catch (Exception e) {
+				String message = themeDisplay.translate(
+						"an-unexpected-error-occurred-while-importing-your-" +
+						"file");
+
+				jsonObject.put("error", message);
+			}
 		}
 		else {
-			jsonObject.put(
-				"error", themeDisplay.translate("failed-to-import-empty-file"));
+			String message = themeDisplay.translate(
+				"failed-to-import-empty-file");
+
+			jsonObject.put("error", message);
 		}
 
 		writeJSON(resourceRequest, resourceResponse, jsonObject);

@@ -24,6 +24,7 @@
 	<aui:input name="subscriptionIds" type="hidden" />
 
 	<liferay-ui:error exception="<%= NoSuchSubscriptionException.class %>" message="the-subscription-could-not-be-found" />
+	<liferay-ui:error exception="<%= PrincipalException.class %>" message="you-do-not-have-the-required-permissions" />
 
 	<aui:fieldset>
 		<liferay-portlet:renderURL varImpl="iteratorURL" />
@@ -33,10 +34,10 @@
 			emptyResultsMessage="no-subscriptions-were-found"
 			iteratorURL="<%= iteratorURL %>"
 			rowChecker="<%= new RowChecker(renderResponse) %>"
+			total="<%= SubscriptionLocalServiceUtil.getUserSubscriptionsCount(user.getUserId()) %>"
 		>
 			<liferay-ui:search-container-results
 				results="<%= SubscriptionLocalServiceUtil.getUserSubscriptions(user.getUserId(), searchContainer.getStart(), searchContainer.getEnd(), new SubscriptionClassNameIdComparator(true)) %>"
-				total="<%= SubscriptionLocalServiceUtil.getUserSubscriptionsCount(user.getUserId()) %>"
 			/>
 
 			<%
@@ -117,27 +118,25 @@
 		window,
 		'<portlet:namespace />displayPopup',
 		function(url, title) {
-			var dialog = new A.Dialog(
+			var dialog = Liferay.Util.Window.getWindow(
 				{
-					align: {
-						node: null,
-						points: ['tc', 'tc']
+					dialog: {
+						align: {
+							node: null,
+							points: ['tc', 'tc']
+						},
+						constrain2view: true,
+						cssClass: 'portlet-my-subscription',
+						modal: true,
+						resizable: true,
+						width: 950
 					},
-					constrain2view: true,
-					cssClass: 'portlet-my-subscription',
-					modal: true,
-					resizable: false,
 					title: title,
-					width: 950
-				}
-			).plug(
-				A.Plugin.DialogIframe,
-				{
 					uri: url
 				}
-			).render();
+			)
 		},
-		['aui-dialog', 'aui-dialog-iframe']
+		['liferay-util-window']
 	);
 
 	Liferay.provide(

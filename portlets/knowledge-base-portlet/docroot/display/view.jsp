@@ -24,10 +24,10 @@
 
 <liferay-ui:search-container
 	searchContainer="<%= new KBArticleSearch(renderRequest, iteratorURL) %>"
+	total="<%= KBArticleServiceUtil.getSiblingKBArticlesCount(scopeGroupId, KBArticleConstants.DEFAULT_PARENT_RESOURCE_PRIM_KEY, WorkflowConstants.STATUS_APPROVED) %>"
 >
 	<liferay-ui:search-container-results
 		results="<%= KBArticleServiceUtil.getSiblingKBArticles(scopeGroupId, KBArticleConstants.DEFAULT_PARENT_RESOURCE_PRIM_KEY, WorkflowConstants.STATUS_APPROVED, searchContainer.getStart(), searchContainer.getEnd(), searchContainer.getOrderByComparator()) %>"
-		total="<%= KBArticleServiceUtil.getSiblingKBArticlesCount(scopeGroupId, KBArticleConstants.DEFAULT_PARENT_RESOURCE_PRIM_KEY, WorkflowConstants.STATUS_APPROVED) %>"
 	/>
 
 	<liferay-ui:search-container-row
@@ -113,8 +113,6 @@
 		/>
 	</liferay-ui:search-container-row>
 
-	<liferay-util:include page="/display/display_tools.jsp" servletContext="<%= application %>" />
-
 	<aui:button-row cssClass="float-container">
 		<c:if test="<%= DisplayPermission.contains(permissionChecker, scopeGroupId, ActionKeys.ADD_KB_ARTICLE) && DisplayPermission.contains(permissionChecker, scopeGroupId, ActionKeys.ADMINISTRATOR) %>">
 			<liferay-portlet:renderURL var="addKBArticleURL">
@@ -135,6 +133,8 @@
 
 			<aui:button href="<%= permissionsURL %>" value="permissions" />
 		</c:if>
+
+		<liferay-util:include page="/display/display_tools.jsp" servletContext="<%= application %>" />
 	</aui:button-row>
 
 	<liferay-ui:search-iterator />

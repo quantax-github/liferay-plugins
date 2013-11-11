@@ -25,7 +25,7 @@ List<MicroblogsEntry> microblogsEntries = (List<MicroblogsEntry>)request.getAttr
 PortletURL microblogsEntriesURL = (PortletURL)request.getAttribute(WebKeys.MICROBLOGS_ENTRIES_URL);
 %>
 
-<c:if test="<%= (microblogsEntries == null) || microblogsEntries.isEmpty() %>">
+<c:if test="<%= microblogsEntries.isEmpty() %>">
 
 	<%
 	String message = LanguageUtil.get(pageContext, "there-are-no-microblog-entries");
@@ -44,7 +44,7 @@ PortletURL microblogsEntriesURL = (PortletURL)request.getAttribute(WebKeys.MICRO
 	}
 	%>
 
-	<div class="portlet-msg-info">
+	<div class="alert alert-info">
 		<%= message %>
 	</div>
 </c:if>
@@ -68,7 +68,7 @@ if (microblogsEntries != null) {
 		}
 %>
 
-		<div class="microblogs-entry" id="microblogsEntry<%= microblogsEntry.getMicroblogsEntryId() %>">
+		<div class="microblogs-entry" id="<portlet:namespace />microblogsEntry<%= microblogsEntry.getMicroblogsEntryId() %>">
 			<span class="thumbnail">
 				<a href="<%= userDisplayURL %>"><img alt="<%= userFullName %>" src="<%= userPortaitURL %>" /></a>
 			</span>
@@ -162,7 +162,7 @@ if (microblogsEntries != null) {
 				</div>
 			</div>
 
-			<div class="comments-container reply" id="commentsContainer<%= microblogsEntry.getMicroblogsEntryId() %>"><!-- --></div>
+			<div class="comments-container reply" id="<portlet:namespace />commentsContainer<%= microblogsEntry.getMicroblogsEntryId() %>"><!-- --></div>
 		</div>
 
 <%
