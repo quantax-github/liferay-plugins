@@ -7961,8 +7961,75 @@
 				<comment><![CDATA[]]></comment>
 			</param>
 			<param>
+				<name>start</name>
+				<type>int</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
+				<name>end</name>
+				<type>int</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
 				<name>orderByComparator</name>
 				<type>com.liferay.portal.kernel.util.OrderByComparator</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<return>
+				<comment><![CDATA[]]></comment>
+			</return>
+			<throws>
+				<name>SystemException</name>
+				<type>com.liferay.portal.kernel.exception.SystemException</type>
+				<comment><![CDATA[]]></comment>
+			</throws>
+		</method>
+		<method>
+			<name>getKBArticles</name>
+			<param>
+				<name>groupId</name>
+				<type>long</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
+				<name>resourcePrimKeys</name>
+				<type>long[]</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
+				<name>status</name>
+				<type>int</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
+				<name>orderByComparator</name>
+				<type>com.liferay.portal.kernel.util.OrderByComparator</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<return>
+				<comment><![CDATA[]]></comment>
+			</return>
+			<throws>
+				<name>SystemException</name>
+				<type>com.liferay.portal.kernel.exception.SystemException</type>
+				<comment><![CDATA[]]></comment>
+			</throws>
+		</method>
+		<method>
+			<name>getKBArticlesCount</name>
+			<param>
+				<name>groupId</name>
+				<type>long</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
+				<name>resourcePrimKeys</name>
+				<type>long[]</type>
+				<comment><![CDATA[]]></comment>
+			</param>
+			<param>
+				<name>status</name>
+				<type>int</type>
 				<comment><![CDATA[]]></comment>
 			</param>
 			<return>
@@ -9673,27 +9740,6 @@
 		</method>
 		<field>
 			<name>_SQL_DATA_MAX_PARAMETERS</name>
-		</field>
-	</javadoc>
-	<javadoc>
-		<name>PortletKeys</name>
-		<type>com.liferay.knowledgebase.util.PortletKeys</type>
-		<author><![CDATA[Brian Wing Shun Chan]]></author>
-		<author><![CDATA[Peter Shin]]></author>
-		<field>
-			<name>KNOWLEDGE_BASE_ARTICLE</name>
-		</field>
-		<field>
-			<name>KNOWLEDGE_BASE_ARTICLE_DEFAULT_INSTANCE</name>
-		</field>
-		<field>
-			<name>KNOWLEDGE_BASE_DISPLAY</name>
-		</field>
-		<field>
-			<name>KNOWLEDGE_BASE_SEARCH</name>
-		</field>
-		<field>
-			<name>KNOWLEDGE_BASE_SECTION</name>
 		</field>
 	</javadoc>
 	<javadoc>

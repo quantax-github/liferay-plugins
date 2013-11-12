@@ -52,13 +52,26 @@ public class AnnouncementsPortlet extends MVCPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
 		long entryId = ParamUtil.getLong(actionRequest, "entryId");
 
-		AnnouncementsEntryServiceUtil.deleteEntry(entryId);
+		try {
+			AnnouncementsEntryServiceUtil.deleteEntry(entryId);
 
-		SessionMessages.add(actionRequest, "announcementDeleted");
+			SessionMessages.add(actionRequest, "announcementDeleted");
 
-		sendRedirect(actionRequest, actionResponse);
+			jsonObject.put("success", true);
+		}
+		catch (Exception e) {
+			jsonObject.put(
+				"message",
+				translate(
+					actionRequest, "the-announcement-could-not-be-deleted"));
+			jsonObject.put("success", false);
+		}
+
+		writeJSON(actionRequest, actionResponse, jsonObject);
 	}
 
 	@Override
@@ -234,9 +247,9 @@ public class AnnouncementsPortlet extends MVCPortlet {
 			AnnouncementsEntryServiceUtil.updateEntry(
 				entryId, title, content, url, type, displayDateMonth,
 				displayDateDay, displayDateYear, displayDateHour,
-				displayDateMinute, expirationDateMonth, expirationDateDay,
-				expirationDateYear, expirationDateHour, expirationDateMinute,
-				priority);
+				displayDateMinute, displayImmediately, expirationDateMonth,
+				expirationDateDay, expirationDateYear, expirationDateHour,
+				expirationDateMinute, priority);
 		}
 	}
 

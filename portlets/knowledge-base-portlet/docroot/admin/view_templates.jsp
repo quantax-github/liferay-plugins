@@ -44,9 +44,7 @@
 			KBTemplateSearchTerms searchTerms = (KBTemplateSearchTerms)searchContainer.getSearchTerms();
 			%>
 
-			<liferay-ui:search-container-results>
-				<%@ include file="/admin/template_search_results.jspf" %>
-			</liferay-ui:search-container-results>
+			<%@ include file="/admin/template_search_results.jspf" %>
 
 			<liferay-ui:search-container-row
 				className="com.liferay.knowledgebase.model.KBTemplate"
@@ -112,7 +110,7 @@
 			</c:if>
 
 			<c:if test="<%= (total > 0) && AdminPermission.contains(permissionChecker, scopeGroupId, ActionKeys.DELETE_KB_TEMPLATES) %>">
-				<aui:button-row>
+				<aui:button-row cssClass="kb-bulk-action-button-holder">
 					<aui:button onClick='<%= renderResponse.getNamespace() + "deleteKBTemplates();" %>' value="delete" />
 				</aui:button-row>
 			</c:if>

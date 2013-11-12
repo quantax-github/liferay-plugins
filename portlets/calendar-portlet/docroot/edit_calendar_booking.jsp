@@ -29,7 +29,7 @@ long calendarBookingId = BeanPropertiesUtil.getLong(calendarBooking, "calendarBo
 
 long calendarId = BeanParamUtil.getLong(calendarBooking, request, "calendarId", userDefaultCalendar.getCalendarId());
 
-long startTime = BeanParamUtil.getLong(calendarBooking, request, "startTime", nowJCalendar.getTimeInMillis());
+long startTime = BeanPropertiesUtil.getLong(calendarBooking, "startTime", ParamUtil.getLong(request, "startTime", nowJCalendar.getTimeInMillis()));
 
 java.util.Calendar startTimeJCalendar = JCalendarUtil.getJCalendar(startTime, userTimeZone);
 
@@ -37,7 +37,7 @@ java.util.Calendar defaultEndTimeJCalendar = (java.util.Calendar)nowJCalendar.cl
 
 defaultEndTimeJCalendar.add(java.util.Calendar.HOUR, 1);
 
-long endTime = BeanParamUtil.getLong(calendarBooking, request, "endTime", defaultEndTimeJCalendar.getTimeInMillis());
+long endTime = BeanPropertiesUtil.getLong(calendarBooking, "endTime", ParamUtil.getLong(request, "endTime", defaultEndTimeJCalendar.getTimeInMillis()));
 
 java.util.Calendar endTimeJCalendar = JCalendarUtil.getJCalendar(endTime, userTimeZone);
 
@@ -101,7 +101,6 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 	<aui:input name="mvcPath" type="hidden" value="/edit_calendar_booking.jsp" />
 	<aui:input name="calendarBookingId" type="hidden" value="<%= calendarBookingId %>" />
 	<aui:input name="childCalendarIds" type="hidden" />
-	<aui:input name="oldStartTime" type="hidden" value="<%= startTimeJCalendar.getTimeInMillis() %>" />
 	<aui:input name="status" type="hidden" value ="<%= status %>" />
 	<aui:input name="allFollowing" type="hidden" />
 	<aui:input name="updateCalendarBookingInstance" type="hidden" />
@@ -132,6 +131,8 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 
 			<a class="calendar-portlet-recurrence-summary" href="javascript:;" id="<portlet:namespace />summary"></a>
 		</aui:field-wrapper>
+
+		<aui:input name="description" />
 	</aui:fieldset>
 
 	<aui:fieldset>
@@ -146,15 +147,13 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 						}
 					%>
 
-						<aui:option selected="<%= curCalendar.getCalendarId() == calendarId %>" value="<%= curCalendar.getCalendarId() %>"><%= curCalendar.getName(locale) %></aui:option>
+						<aui:option selected="<%= curCalendar.getCalendarId() == calendarId %>" value="<%= curCalendar.getCalendarId() %>"><%= HtmlUtil.escape(curCalendar.getName(locale)) %></aui:option>
 
 					<%
 					}
 					%>
 
 				</aui:select>
-
-				<aui:input name="description" />
 
 				<aui:input name="location" />
 
@@ -285,6 +284,10 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 		return <%= calendarBookingId %> !== calendarBooking.calendarBookingId;
 	}
 
+	function <portlet:namespace />getSuggestionsContent() {
+		return document.<portlet:namespace />fm.<portlet:namespace />title.value + ' ' + document.<portlet:namespace />fm.<portlet:namespace />description.value;
+	}
+
 	Liferay.provide(
 		window,
 		'<portlet:namespace />updateCalendarBooking',
@@ -334,7 +337,7 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 							'<p class="calendar-portlet-confirmation-text">',
 							A.Lang.sub(
 								Liferay.Language.get('you-are-about-to-make-changes-that-will-only-effect-your-calendar-x'),
-								['<%= calendar.getName(locale) %>']
+								['<%= HtmlUtil.escapeJS(calendar.getName(locale)) %>']
 							),
 							'</p>'
 						].join('');
@@ -346,10 +349,10 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 							function() {
 								submitForm(document.<portlet:namespace />fm);
 
-								this.close();
+								this.hide();
 							},
 							function() {
-								this.close();
+								this.hide();
 							}
 						);
 					</c:otherwise>
@@ -685,11 +688,11 @@ List<Calendar> manageableCalendars = CalendarServiceUtil.search(themeDisplay.get
 			values: [
 				{
 					interval: <%= firstReminder %>,
-					type: '<%= HtmlUtil.escape(firstReminderType) %>'
+					type: '<%= HtmlUtil.escapeJS(firstReminderType) %>'
 				},
 				{
 					interval: <%= secondReminder %>,
-					type: '<%= HtmlUtil.escape(secondReminderType) %>'
+					type: '<%= HtmlUtil.escapeJS(secondReminderType) %>'
 				}
 			]
 		}

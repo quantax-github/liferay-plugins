@@ -14,19 +14,25 @@
 
 package com.liferay.so.activities.hook.social;
 
+import com.liferay.calendar.model.CalendarBooking;
+import com.liferay.calendar.service.CalendarBookingLocalServiceUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.util.PortalUtil;
+import com.liferay.portlet.PortletURLFactoryUtil;
 import com.liferay.portlet.asset.model.AssetRenderer;
-import com.liferay.portlet.calendar.model.CalEvent;
-import com.liferay.portlet.calendar.service.CalEventLocalServiceUtil;
 import com.liferay.portlet.social.model.SocialActivity;
 import com.liferay.portlet.social.model.SocialActivitySet;
 import com.liferay.portlet.social.service.SocialActivityLocalServiceUtil;
 import com.liferay.portlet.social.service.SocialActivitySetLocalServiceUtil;
+import com.liferay.so.activities.util.SocialActivityKeyConstants;
 
 import java.text.Format;
+
+import javax.portlet.PortletRequest;
+import javax.portlet.PortletURL;
 
 /**
  * @author Evan Thibodeau
@@ -46,7 +52,10 @@ public class CalendarActivityInterpreter extends SOSocialActivityInterpreter {
 			SocialActivity activity =
 				SocialActivityLocalServiceUtil.getActivity(activityId);
 
-			if (activity.getType() == _ACTIVITY_KEY_UPDATE_EVENT) {
+			if (activity.getType() ==
+					SocialActivityKeyConstants.
+						CALENDAR_UPDATE_CALENDAR_BOOKING) {
+
 				activitySet =
 					SocialActivitySetLocalServiceUtil.getClassActivitySet(
 						activity.getUserId(), activity.getClassNameId(),
@@ -77,7 +86,9 @@ public class CalendarActivityInterpreter extends SOSocialActivityInterpreter {
 			SocialActivitySet activitySet, ServiceContext serviceContext)
 		throws Exception {
 
-		if (activitySet.getType() ==_ACTIVITY_KEY_UPDATE_EVENT) {
+		if (activitySet.getType() ==
+				SocialActivityKeyConstants.CALENDAR_UPDATE_CALENDAR_BOOKING) {
+
 			return getBody(
 				activitySet.getClassName(), activitySet.getClassPK(),
 				serviceContext);
@@ -101,14 +112,15 @@ public class CalendarActivityInterpreter extends SOSocialActivityInterpreter {
 		Format dateFormatDate = getFormatDateTime(
 			serviceContext.getLocale(), serviceContext.getTimeZone());
 
-		CalEvent event = CalEventLocalServiceUtil.getEvent(classPK);
+		CalendarBooking calendarBooking =
+			CalendarBookingLocalServiceUtil.fetchCalendarBooking(classPK);
 
-		sb.append(dateFormatDate.format((event.getStartDate())));
+		sb.append(dateFormatDate.format(calendarBooking.getStartTime()));
 
 		sb.append("</div><div class=\"location\"><strong>");
 		sb.append(serviceContext.translate("location"));
 		sb.append(": </strong>");
-		sb.append(event.getLocation());
+		sb.append(calendarBooking.getLocation());
 		sb.append("</div><div class=\"description\"><strong>");
 		sb.append(serviceContext.translate("description"));
 		sb.append(": </strong>");
@@ -125,13 +137,41 @@ public class CalendarActivityInterpreter extends SOSocialActivityInterpreter {
 	}
 
 	@Override
+	protected String getLinkURL(
+			String className, long classPK, ServiceContext serviceContext)
+		throws Exception {
+
+		CalendarBooking calendarBooking =
+			CalendarBookingLocalServiceUtil.fetchCalendarBooking(classPK);
+
+		long plid = PortalUtil.getPlidFromPortletId(
+			calendarBooking.getGroupId(), "1_WAR_calendarportlet");
+
+		PortletURL portletURL = PortletURLFactoryUtil.create(
+			serviceContext.getRequest(), "1_WAR_calendarportlet", plid,
+			PortletRequest.RENDER_PHASE);
+
+		portletURL.setParameter("mvcPath", "/view_calendar_booking.jsp");
+		portletURL.setParameter(
+			"calendarBookingId",
+			String.valueOf(calendarBooking.getCalendarBookingId()));
+
+		return portletURL.toString();
+	}
+
+	@Override
 	protected String getTitlePattern(
 		String groupName, SocialActivity activity) {
 
-		if (activity.getType() == _ACTIVITY_KEY_ADD_EVENT) {
+		if (activity.getType() ==
+				SocialActivityKeyConstants.CALENDAR_ADD_CALENDAR_BOOKING) {
+
 			return "added-a-new-calendar-event";
 		}
-		else if (activity.getType() == _ACTIVITY_KEY_UPDATE_EVENT) {
+		else if (activity.getType() ==
+					SocialActivityKeyConstants.
+						CALENDAR_UPDATE_CALENDAR_BOOKING) {
+
 			return "updated-a-calendar-event";
 		}
 
@@ -142,28 +182,22 @@ public class CalendarActivityInterpreter extends SOSocialActivityInterpreter {
 	protected String getTitlePattern(
 		String groupName, SocialActivitySet activitySet) {
 
-		if (activitySet.getType() == _ACTIVITY_KEY_ADD_EVENT) {
+		if (activitySet.getType() ==
+				SocialActivityKeyConstants.CALENDAR_ADD_CALENDAR_BOOKING) {
+
 			return "added-x-new-calendar-events";
 		}
-		else if (activitySet.getType() == _ACTIVITY_KEY_UPDATE_EVENT) {
+		else if (activitySet.getType() ==
+					SocialActivityKeyConstants.
+						CALENDAR_UPDATE_CALENDAR_BOOKING) {
+
 			return "made-x-updates-to-a-calendar-event";
 		}
 
 		return StringPool.BLANK;
 	}
 
-	/**
-	 * {@link
-	 * com.liferay.portlet.calendar.social.CalendarActivityKeys#ADD_EVENT}
-	 */
-	private static final int _ACTIVITY_KEY_ADD_EVENT = 1;
-
-	/**
-	 * {@link
-	 * com.liferay.portlet.calendar.social.CalendarActivityKeys#UPDATE_EVENT}
-	 */
-	private static final int _ACTIVITY_KEY_UPDATE_EVENT = 2;
-
-	private static final String[] _CLASS_NAMES = {CalEvent.class.getName()};
+	private static final String[] _CLASS_NAMES =
+		{CalendarBooking.class.getName()};
 
 }
